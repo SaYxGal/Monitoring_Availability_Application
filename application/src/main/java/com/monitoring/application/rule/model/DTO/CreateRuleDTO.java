@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public class CreateRuleDTO {
-    @NotBlank(message = "name is mandatory")
+    @NotBlank(message = "URL is mandatory")
     private String URL;
     @NotNull
     @Min(value = 1, message = "millisInterval must be positive number")
