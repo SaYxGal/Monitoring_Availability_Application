@@ -19,6 +19,8 @@ public class Rule {
     private Short expectedStatus;
     @Column(nullable = false)
     private Boolean enabled = true;
+    @Column(nullable = false)
+    private Short lastTestStatus;
 
     public Rule() {
     }
@@ -27,6 +29,7 @@ public class Rule {
         this.URL = URL;
         this.millisInterval = millisInterval;
         this.expectedStatus = expectedStatus;
+        this.lastTestStatus = expectedStatus;
     }
 
     public Long getId() {
@@ -67,6 +70,14 @@ public class Rule {
 
     public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public Short getLastTestStatus() {
+        return lastTestStatus;
+    }
+
+    public void setLastTestStatus(Short lastTestStatus) {
+        this.lastTestStatus = lastTestStatus;
     }
 
     @Override

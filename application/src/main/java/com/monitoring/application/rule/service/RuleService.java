@@ -8,7 +8,7 @@ import java.util.List;
 public interface RuleService {
     List<Rule> getAllRules();
     Rule findRule(Long id);
-    Boolean createRule(CreateRuleDTO ruleInfo);
+    void createRule(CreateRuleDTO ruleInfo);
     Boolean deleteRule(Long id);
     String turnOnOffRule(Long id);
 }

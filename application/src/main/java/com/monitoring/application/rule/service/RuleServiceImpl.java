@@ -8,15 +8,21 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 
 @Service
@@ -28,20 +34,37 @@ public class RuleServiceImpl implements RuleService {
             new IdentityHashMap<>();
     private final TaskScheduler taskScheduler;
     class ScheduledTaskExecutor implements Runnable{
-        private final String URL;
-        public ScheduledTaskExecutor(String URL){
-            this.URL = URL;
+        private final Rule rule;
+        public ScheduledTaskExecutor(Rule rule){
+            this.rule = rule;
         }
         @Override
         public void run() {
-            WebClient.ResponseSpec result =  webClient.mutate()
-                    .baseUrl(URL)
-                            .build()
-                                    .get()
-                                            .uri("")
-                                                    .retrieve();
-            System.out.println(Objects.requireNonNull(result.toBodilessEntity().block()).getStatusCode() + " "
-                    + Instant.now() + " " + Thread.currentThread().getName());
+            try{
+               Mono<HttpStatusCode>statusCode = webClient
+                        .method(HttpMethod.GET)
+                       .uri(rule.getURL())
+                        .exchangeToMono(clientResponse -> Mono.just(clientResponse.statusCode()));
+               int status = statusCode.block().value();
+               if (rule.getLastTestStatus() != status) {
+                   if(status != rule.getExpectedStatus()){
+                       System.out.println("System is abnormal now. From " + rule.getLastTestStatus() + "to " + status + " "
+                               + Instant.now() + " " + Thread.currentThread().getName());
+                   }
+                   else{
+                       System.out.println("System is ok now. From " + rule.getLastTestStatus() + "to " + status + " "
+                               + Instant.now() + " " + Thread.currentThread().getName());
+                   }
+               }
+               rule.setLastTestStatus((short)status);;
+            }
+            catch (Exception e) {
+                rule.setLastTestStatus((short) 503);
+                System.out.println("System is not accessible");
+            }
+            finally {
+                ruleRepository.save(rule);
+            }
         }
     }
     @PostConstruct
@@ -53,7 +76,7 @@ public class RuleServiceImpl implements RuleService {
     }
     private void startScheduledTask(Rule rule){
         scheduledTasks.put(rule.getId(),
-                taskScheduler.scheduleWithFixedDelay(new ScheduledTaskExecutor(rule.getURL()),
+                taskScheduler.scheduleWithFixedDelay(new ScheduledTaskExecutor(rule),
                         Duration.of(rule.getMillisInterval(), ChronoUnit.MILLIS)));
     }
     private void stopScheduledTask(Long ruleId){
@@ -82,12 +105,11 @@ public class RuleServiceImpl implements RuleService {
 
     @Override
     @Transactional
-    public Boolean createRule(CreateRuleDTO ruleInfo) {
+    public void createRule(CreateRuleDTO ruleInfo) {
         final Rule rule = new Rule(ruleInfo.getURL(), ruleInfo.getMillisInterval(),
                 ruleInfo.getExpectedStatus());
         final Rule savedRule = ruleRepository.save(rule);
         startScheduledTask(savedRule);
-        return true;
     }
 
     @Override

@@ -27,8 +27,12 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	//swagger
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0'
-	//springFlux
+	//testRequest
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	//SpringSecurity
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'com.auth0:java-jwt:4.4.0'
+
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

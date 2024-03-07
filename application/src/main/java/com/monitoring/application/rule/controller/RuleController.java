@@ -1,5 +1,6 @@
 package com.monitoring.application.rule.controller;
 
+import com.monitoring.application.configuration.OpenApi30Configuration;
 import com.monitoring.application.rule.model.DTO.CreateRuleDTO;
 import com.monitoring.application.rule.model.DTO.ViewRuleDTO;
 import com.monitoring.application.rule.model.Rule;
@@ -14,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api" + "/rules")
+@RequestMapping(OpenApi30Configuration.API_PREFIX + "/rules")
 public class RuleController {
     @Autowired
     private final RuleService ruleService;
