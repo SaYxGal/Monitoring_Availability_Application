@@ -5,6 +5,7 @@ import com.monitoring.application.rule.model.DTO.CreateRuleDTO;
 import com.monitoring.application.rule.model.DTO.ViewRuleDTO;
 import com.monitoring.application.rule.model.Rule;
 import com.monitoring.application.rule.service.RuleService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +25,7 @@ public class RuleController {
         this.ruleService = ruleService;
     }
     @PostMapping(value = "")
-    public ResponseEntity<?> create(@RequestBody CreateRuleDTO ruleInfo) {
+    public ResponseEntity<?> create(@RequestBody @Valid CreateRuleDTO ruleInfo) {
         ruleService.createRule(ruleInfo);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }

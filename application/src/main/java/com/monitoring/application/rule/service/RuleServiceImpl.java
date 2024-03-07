@@ -1,9 +1,12 @@
 package com.monitoring.application.rule.service;
 
+import com.monitoring.application.channel.model.Channel;
+import com.monitoring.application.channel.service.ChannelService;
 import com.monitoring.application.rule.model.DTO.CreateRuleDTO;
 import com.monitoring.application.rule.model.Rule;
 import com.monitoring.application.rule.repository.RuleRepository;
 import com.monitoring.application.rule.service.exception.RuleNotFoundException;
+import com.monitoring.application.telegram.NotificationBot;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
@@ -17,7 +20,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -29,14 +31,30 @@ import java.util.concurrent.ScheduledFuture;
 @Primary
 public class RuleServiceImpl implements RuleService {
     private final RuleRepository ruleRepository;
+    private final ChannelService channelService;
+    private final NotificationBot notificationBot;
     private final WebClient webClient;
     private final Map<Long, ScheduledFuture<?>> scheduledTasks =
             new IdentityHashMap<>();
     private final TaskScheduler taskScheduler;
+    public RuleServiceImpl(RuleRepository ruleRepository, @Autowired ChannelService channelService,
+                           NotificationBot notificationBot,
+                           @Autowired WebClient webClient, @Autowired TaskScheduler taskScheduler) {
+        this.ruleRepository = ruleRepository;
+        this.channelService = channelService;
+        this.notificationBot = notificationBot;
+        this.webClient = webClient;
+        this.taskScheduler = taskScheduler;
+    }
     class ScheduledTaskExecutor implements Runnable{
         private final Rule rule;
         public ScheduledTaskExecutor(Rule rule){
             this.rule = rule;
+        }
+        private void sendAllListeners(String message){
+            for (Channel channel : channelService.getAllChannels()) {
+                notificationBot.sendMessageToChannel(channel.getChatId(), message);
+            }
         }
         @Override
         public void run() {
@@ -48,19 +66,21 @@ public class RuleServiceImpl implements RuleService {
                int status = statusCode.block().value();
                if (rule.getLastTestStatus() != status) {
                    if(status != rule.getExpectedStatus()){
-                       System.out.println("System is abnormal now. From " + rule.getLastTestStatus() + "to " + status + " "
-                               + Instant.now() + " " + Thread.currentThread().getName());
+                       sendAllListeners(String.format("Сервер по пути '%s' вернул некорректный ответ." +
+                                       "Предыдущий ответ - '%d', текущий ответ - '%d'", rule.getURL(),
+                               rule.getLastTestStatus(), status));
                    }
                    else{
-                       System.out.println("System is ok now. From " + rule.getLastTestStatus() + "to " + status + " "
-                               + Instant.now() + " " + Thread.currentThread().getName());
+                       sendAllListeners(String.format("Сервер по пути '%s' вернул корректный ответ." +
+                                       "Предыдущий ответ - '%d', текущий ответ - '%d'", rule.getURL(),
+                               rule.getLastTestStatus(), status));
                    }
                }
                rule.setLastTestStatus((short)status);;
             }
             catch (Exception e) {
                 rule.setLastTestStatus((short) 503);
-                System.out.println("System is not accessible");
+                sendAllListeners("System is not accessible");
             }
             finally {
                 ruleRepository.save(rule);
@@ -82,12 +102,6 @@ public class RuleServiceImpl implements RuleService {
     private void stopScheduledTask(Long ruleId){
         scheduledTasks.get(ruleId).cancel(false);
         scheduledTasks.remove(ruleId);
-    }
-
-    public RuleServiceImpl(RuleRepository ruleRepository, @Autowired WebClient webClient, @Autowired TaskScheduler taskScheduler) {
-        this.ruleRepository = ruleRepository;
-        this.webClient = webClient;
-        this.taskScheduler = taskScheduler;
     }
 
     @Override
@@ -115,10 +129,14 @@ public class RuleServiceImpl implements RuleService {
     @Override
     @Transactional
     public Boolean deleteRule(Long id) {
-        final Rule ruleForDelete = findRule(id);
-        ruleRepository.delete(ruleForDelete);
-        stopScheduledTask(ruleForDelete.getId());
-        return true;
+        try {
+            ruleRepository.deleteById(id);
+            stopScheduledTask(id);
+            return true;
+        }
+        catch (Exception ex) {
+            return false;
+        }
     }
 
     @Override

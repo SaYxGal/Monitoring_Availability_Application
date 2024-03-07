@@ -32,6 +32,10 @@ dependencies {
 	//SpringSecurity
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'com.auth0:java-jwt:4.4.0'
+	//Telegram
+	implementation 'org.telegram:telegrambots-spring-boot-starter:6.7.0'
+	implementation 'org.telegram:telegrambots-abilities:6.7.0'
+	implementation 'javax.xml.bind:jaxb-api:2.3.1'
 
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
