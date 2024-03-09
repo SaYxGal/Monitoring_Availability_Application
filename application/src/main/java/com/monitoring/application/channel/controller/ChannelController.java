@@ -6,6 +6,7 @@ import com.monitoring.application.configuration.OpenApi30Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,11 +20,13 @@ public class ChannelController {
     public ChannelController(ChannelService channelService) {
         this.channelService = channelService;
     }
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping(value = "")
     public ResponseEntity<?> create(@RequestParam Long chatId) {
         channelService.createChannel(chatId);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping(value = "")
     public ResponseEntity<List<Channel>> readAll() {
         final List<Channel> channels = channelService.getAllChannels();
@@ -31,6 +34,7 @@ public class ChannelController {
                 ? new ResponseEntity<>(channels, HttpStatus.OK)
                 : new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @DeleteMapping(value = "/{id}")
     public ResponseEntity<?> delete(@PathVariable(name = "id") long id) {
         final boolean deleted = channelService.deleteChannel(id);

@@ -11,7 +11,7 @@ import static org.telegram.abilitybots.api.objects.Privacy.PUBLIC;
 public class NotificationBot extends AbilityBot {
     private final ResponseHandler responseHandler;
     public NotificationBot(Environment environment) {
-        super(environment.getProperty("BOT_TOKEN"), "notificationServerSpringbot");
+        super(environment.getProperty("BOT_TOKEN"), environment.getProperty("BOT_USERNAME"));
         responseHandler = new ResponseHandler(silent);
     }
     public Ability startBot() {

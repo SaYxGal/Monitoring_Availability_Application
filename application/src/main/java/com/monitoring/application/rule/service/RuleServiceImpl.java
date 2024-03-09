@@ -60,8 +60,10 @@ public class RuleServiceImpl implements RuleService {
         public void run() {
             try{
                Mono<HttpStatusCode>statusCode = webClient
-                        .method(HttpMethod.GET)
-                       .uri(rule.getURL())
+                       .mutate()
+                       .baseUrl(rule.getURL())
+                       .build()
+                       .method(HttpMethod.GET)
                         .exchangeToMono(clientResponse -> Mono.just(clientResponse.statusCode()));
                int status = statusCode.block().value();
                if (rule.getLastTestStatus() != status) {
@@ -79,8 +81,10 @@ public class RuleServiceImpl implements RuleService {
                rule.setLastTestStatus((short)status);;
             }
             catch (Exception e) {
-                rule.setLastTestStatus((short) 503);
-                sendAllListeners("System is not accessible");
+                if (rule.getLastTestStatus() != 503) {
+                    rule.setLastTestStatus((short) 503);
+                    sendAllListeners(String.format("Сервер по пути '%s' недоступен", rule.getURL()));
+                }
             }
             finally {
                 ruleRepository.save(rule);
