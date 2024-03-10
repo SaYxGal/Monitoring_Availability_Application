@@ -78,8 +78,8 @@ public class RuleServiceImpl implements RuleService {
                if (rule.getLastTestStatus() != status) {
                    if(status != rule.getExpectedStatus()){
                        sendAllListeners(String.format("Сервер по пути '%s' вернул некорректный ответ." +
-                                       "Предыдущий ответ - '%d', текущий ответ - '%d'", rule.getURL(),
-                               rule.getLastTestStatus(), status));
+                                       "Ожидаемый ответ - '%d', текущий ответ - '%d'", rule.getURL(),
+                               rule.getExpectedStatus(), status));
                    }
                    else{
                        sendAllListeners(String.format("Сервер по пути '%s' вернул корректный ответ." +
@@ -117,7 +117,7 @@ public class RuleServiceImpl implements RuleService {
                         Duration.of(rule.getMillisInterval(), ChronoUnit.MILLIS)));
     }
     private void stopScheduledTask(Long ruleId){
-        scheduledTasks.get(ruleId).cancel(false);
+        scheduledTasks.get(ruleId).cancel(true);
         scheduledTasks.remove(ruleId);
     }
 
