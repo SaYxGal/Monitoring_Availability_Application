@@ -21,10 +21,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 
 @Service
@@ -35,7 +32,7 @@ public class RuleServiceImpl implements RuleService {
     private final NotificationBot notificationBot;
     private final WebClient webClient;
     private final Map<Long, ScheduledFuture<?>> scheduledTasks =
-            new IdentityHashMap<>();
+            new HashMap<>();
     private final TaskScheduler taskScheduler;
     public RuleServiceImpl(RuleRepository ruleRepository, @Autowired ChannelService channelService,
                            NotificationBot notificationBot,
