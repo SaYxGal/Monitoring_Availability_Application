@@ -47,9 +47,9 @@ public class RuleServiceImpl implements RuleService {
         this.taskScheduler = taskScheduler;
     }
     class ScheduledTaskExecutor implements Runnable{
-        private final Rule rule;
-        public ScheduledTaskExecutor(Rule rule){
-            this.rule = rule;
+        private final Long ruleId;
+        public ScheduledTaskExecutor(Long ruleId){
+            this.ruleId = ruleId;
         }
         private void sendAllListeners(String message){
             for (Channel channel : channelService.getAllChannels()) {
@@ -57,7 +57,16 @@ public class RuleServiceImpl implements RuleService {
             }
         }
         @Override
+        @Transactional
         public void run() {
+            boolean needSave = false;
+            Rule rule;
+            try{
+                rule = findRule(ruleId);
+            }
+            catch(Exception ex){
+                return;
+            }
             try{
                Mono<HttpStatusCode>statusCode = webClient
                        .mutate()
@@ -77,17 +86,21 @@ public class RuleServiceImpl implements RuleService {
                                        "Предыдущий ответ - '%d', текущий ответ - '%d'", rule.getURL(),
                                rule.getLastTestStatus(), status));
                    }
+                   rule.setLastTestStatus((short)status);
+                   needSave = true;
                }
-               rule.setLastTestStatus((short)status);;
             }
             catch (Exception e) {
                 if (rule.getLastTestStatus() != 503) {
                     rule.setLastTestStatus((short) 503);
+                    needSave = true;
                     sendAllListeners(String.format("Сервер по пути '%s' недоступен", rule.getURL()));
                 }
             }
             finally {
-                ruleRepository.save(rule);
+                if(needSave){
+                    ruleRepository.save(rule);
+                }
             }
         }
     }
@@ -100,7 +113,7 @@ public class RuleServiceImpl implements RuleService {
     }
     private void startScheduledTask(Rule rule){
         scheduledTasks.put(rule.getId(),
-                taskScheduler.scheduleWithFixedDelay(new ScheduledTaskExecutor(rule),
+                taskScheduler.scheduleWithFixedDelay(new ScheduledTaskExecutor(rule.getId()),
                         Duration.of(rule.getMillisInterval(), ChronoUnit.MILLIS)));
     }
     private void stopScheduledTask(Long ruleId){

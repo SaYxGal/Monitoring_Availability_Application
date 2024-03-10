@@ -11,7 +11,7 @@ public class Rule {
     @GeneratedValue(strategy=GenerationType.SEQUENCE, generator="rule_seq")
     @SequenceGenerator(name="rule_seq", sequenceName="RULE_SEQ", allocationSize=1)
     private Long id;
-    @Column(nullable = false, name = "url", unique = true)
+    @Column(nullable = false, name = "url")
     private String URL;
     @Column(nullable = false, name = "millis_interval")
     private Long millisInterval;
